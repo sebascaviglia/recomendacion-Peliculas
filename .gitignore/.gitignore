@@ -1,0 +1,99 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+##### Sistemas Recomendacion de peliculas
+
+
+#cargamos libreria 
+
+library("recommenderlab")
+```
+
+
+```{r}
+# cargamos el data set 
+
+data("MovieLense")
+
+# miramos el data set
+
+head(MovieLense)
+```
+
+
+```{r}
+# creamos un df con las peliculas valoradas mas de 50 veces
+
+rating_movies <-  MovieLense[rowCounts(MovieLense)>50,
+                             colCounts(MovieLense)>100]
+```
+
+
+```{r}
+#creamos un conjunto de entrenamiento 
+
+t.id <-  sample(x= c(T,F), size = nrow(rating_movies),
+                replace = T , prob = c(0.8, 0.2))
+```
+
+
+```{r}
+# creamos un conjunto de entrenamiento y prubeas
+
+data_train <- rating_movies[t.id,]
+
+data_test <- rating_movies[!t.id,]
+```
+
+
+```{r}
+# filtrado colaborativo basado en los items IBCF
+
+ibcf <- Recommender(data = data_train, 
+                    method = "IBCF",
+                    parameter= list(k=30))
+```
+
+
+```{r}
+#creamos un modelo basado en IBCF
+
+ibcf.mod <- getModel(ibcf)
+
+ibcf.mod
+```
+
+
+```{r}
+#creamos un top 10 de las peliculas recomendadas
+
+n_rec <- 10
+
+ibcf.pred <- predict(object = ibcf,
+                     newdata= data_test,
+                     n= n_rec )
+
+# miramos las recomendaciones para los usuarios
+
+ibcf.pred
+```
+
+
+```{r}
+#creamos una marriz de recomendaciones
+
+ibcf.rec_matrix <- sapply(ibcf.pred@items, 
+                          function(x){colnames(rating_movies)[x]
+                            }
+                          )
+
+#visualizamos las recomendaciones de los 3 primeros usuarios
+
+View(ibcf.rec_matrix[,1:3])
